@@ -1,19 +1,23 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  DEV_ENV: 'DEV'
+  TEST_ENV: 'TEST'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+jobs:
+- job: CreateTestEnvironment
+  displayName: 'Create TEST Environment'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      echo "Creating TEST environment from DEV environment"
+      # Add your script or commands to create the TEST environment here
+      # For example, you might use Azure CLI commands to create resources
+      az group create --name $(TEST_ENV) --location eastus
+      az group deployment create --resource-group $(TEST_ENV) --template-file azuredeploy.json
+    displayName: 'Create TEST Environment'
