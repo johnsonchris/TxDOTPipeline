@@ -1,26 +1,57 @@
 trigger:
-- main
+- master
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  DEV_ENV: 'DEV'
-  TEST_ENV: 'TEST'
+  environmentName: 'test-environment'
 
-jobs:
-- job: CreateTestEnvironment
-  displayName: 'Create TEST Environment'
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - task: AzureCLI@2
-    inputs:
-      azureSubscription: 'MyAzureConnection'  # Replace with your actual Azure service connection
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        echo "Creating TEST environment from DEV environment"
-        az login
-        az group create --name ${TEST_ENV} --location eastus
-        az deployment group create --resource-group ${TEST_ENV} --template-file azuredeploy.json
+stages:
+- stage: CreateTestEnvironment
+  displayName: 'Create New Testing Environment'
+  jobs:
+  - job: DeployInfrastructure
+    displayName: 'Deploy Test Environment Infrastructure'
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'MyAzureConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Creating new environment: $(environmentName)"
+          az group create --name $(environmentName) --location eastus
+          az deployment group create --resource-group $(environmentName) --template-file azuredeploy.json --parameters @azuredeploy.parameters.json
+      displayName: 'Deploy ARM Template'
+  
+  - job: DeployApp
+    displayName: 'Deploy Application to Test Environment'
+    dependsOn: DeployInfrastructure
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'MyAzureConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Deploying application to $(environmentName)"
+          # Add your application deployment steps here
+      displayName: 'Deploy Application'
+
+- stage: CleanUp
+  displayName: 'Clean Up Test Environment'
+  condition: failed()
+  jobs:
+  - job: DeleteEnvironment
+    displayName: 'Delete Test Environment'
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'MyAzureConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Deleting environment: $(environmentName)"
+          az group delete --name $(environmentName) --yes --no-wait
+      displayName: 'Delete Test Environment'
