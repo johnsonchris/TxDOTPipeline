@@ -14,10 +14,13 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   steps:
-  - script: |
-      echo "Creating TEST environment from DEV environment"
-      # Add your script or commands to create the TEST environment here
-      # For example, you might use Azure CLI commands to create resources
-      az group create --name $(TEST_ENV) --location eastus
-      az group deployment create --resource-group $(TEST_ENV) --template-file azuredeploy.json
-    displayName: 'Create TEST Environment'
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: 'MyAzureConnection'  # Replace with your actual Azure service connection
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        echo "Creating TEST environment from DEV environment"
+        az login
+        az group create --name ${TEST_ENV} --location eastus
+        az deployment group create --resource-group ${TEST_ENV} --template-file azuredeploy.json
