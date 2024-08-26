@@ -3,6 +3,10 @@ trigger: none
 pool:
   vmImage: 'windows-latest'
 
+variables:
+  PowerPlatformUsername: $(PowerPlatformUsername)
+  PowerPlatformPassword: $(PowerPlatformPassword)
+
 steps:
 - task: PowerShell@2
   displayName: 'Authenticate and Create Power Platform Environment'
@@ -10,11 +14,12 @@ steps:
     targetType: 'inline'
     script: |
       # Power Platform Authentication using username and password
-      $username = "$(PowerPlatformUsername)" # Stored as secret
-      $password = "$(PowerPlatformPassword)" # Stored as secret
-      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $username = "$(PowerPlatformUsername)"  # Retrieved from pipeline variables
+      $securePassword = ConvertTo-SecureString "$(PowerPlatformPassword)" -AsPlainText -Force
       $cred = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+
+      # Authenticate Power Apps account
       Add-PowerAppsAccount -Endpoint prod -Credential $cred
-      
+
       # Example action: Create Power Platform environment
       New-AdminPowerAppEnvironment -EnvironmentName 'TxDOTDev' -Location 'United States' -Type 'Sandbox'
