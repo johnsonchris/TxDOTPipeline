@@ -10,8 +10,8 @@ steps:
     targetType: 'inline'
     script: |
       # Power Platform Authentication using username and password
-      $username = "$PowerPlatformUsername" # Stored as secret
-      $password = "$PowerPlatformPassword" # Stored as secret
+      $username = "$(PowerPlatformUsername)" # Stored as secret
+      $password = "$(PowerPlatformPassword)" # Stored as secret
       $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
       $cred = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
       Add-PowerAppsAccount -Endpoint prod -Credential $cred
