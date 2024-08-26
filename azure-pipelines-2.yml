@@ -1,0 +1,20 @@
+trigger: none
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: PowerShell@2
+  displayName: 'Authenticate and Create Power Platform Environment'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Power Platform Authentication using username and password
+      $username = "$(PowerPlatformUsername)" # Stored as secret
+      $password = "$(PowerPlatformPassword)" # Stored as secret
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $cred = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+      Add-PowerAppsAccount -Endpoint prod -Credential $cred
+      
+      # Example action: Create Power Platform environment
+      New-AdminPowerAppEnvironment -EnvironmentName 'TxDOTDev' -Location 'United States' -Type 'Sandbox'
