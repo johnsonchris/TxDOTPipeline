@@ -14,7 +14,7 @@ steps:
     targetType: 'inline'
     script: |
       # Power Platform Authentication using username and password
-      $username = PowerPlatformUsername  # Retrieved from pipeline variables
+      $username = $(PowerPlatformUsername)  # Retrieved from pipeline variables
       $securePassword = ConvertTo-SecureString $(PowerPlatformPassword) -AsPlainText -Force
       $cred = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
