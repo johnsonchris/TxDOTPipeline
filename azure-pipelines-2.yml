@@ -1,25 +1,53 @@
-trigger: none
+trigger:
+  - main
 
 pool:
   vmImage: 'windows-latest'
 
 variables:
-  PowerPlatformUsername: $(PowerPlatformUsername)
-  PowerPlatformPassword: $(PowerPlatformPassword)
+  - name: environmentName
+    value: 'dev-$(Build.BuildId)'
 
-steps:
-- task: PowerShell@2
-  displayName: 'Authenticate and Create Power Platform Environment'
-  inputs:
-    targetType: 'inline'
-    script: |
-      # Power Platform Authentication using username and password
-      $username = $(PowerPlatformUsername)  # Retrieved from pipeline variables
-      $securePassword = ConvertTo-SecureString $(PowerPlatformPassword) -AsPlainText -Force
-      $cred = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+stages:
+- stage: CreatePowerPlatformEnvironment
+  displayName: 'Create Power Platform Environment'
+  jobs:
+  - job: CreateEnv
+    displayName: 'Create Environment'
+    steps:
+    - task: PowerPlatformToolInstaller@2
+      inputs:
+        DefaultVersion: true
 
-      # Authenticate Power Apps account
-      Add-PowerAppsAccount -Endpoint prod -Credential $cred
 
-      # Example action: Create Power Platform environment
-      New-AdminPowerAppEnvironment -EnvironmentName 'TxDOTDev' -Location 'United States' -Type 'Sandbox'
+    - task: PowerPlatformCreateEnvironment@2
+      inputs:
+        authenticationType: 'PowerPlatformSPN'
+        PowerPlatformSPN: 'PowerPlatformConnection'
+        DisplayName: '$(environmentName)'
+        EnvironmentSku: 'Sandbox'
+        LocationName: 'unitedstates'
+        LanguageName: 'English'
+        CurrencyName: 'USD'
+        DomainName: '$(environmentName)'
+
+
+- stage: ConfigureEnvironment
+  displayName: 'Configure Environment'
+  dependsOn: CreatePowerPlatformEnvironment
+  jobs:
+  - job: ConfigureEnv
+    displayName: 'Configure Environment'
+    steps:
+    - task: PowerPlatformToolInstaller@2
+      inputs:
+        DefaultVersion: true
+
+    - task: PowerPlatformImportSolution@2
+      inputs:
+        authenticationType: 'PowerPlatformSPN'
+        PowerPlatformSPN: 'PowerPlatformConnection'
+        Environment: '$(environmentName)'
+        SolutionInputFile: '$(Build.SourcesDirectory)/YourSolutionFile.zip'
+        AsyncOperation: false
+        MaxAsyncWaitTime: '60'
